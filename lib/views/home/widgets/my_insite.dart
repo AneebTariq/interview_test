@@ -43,7 +43,7 @@ class MyInsightsSection extends StatelessWidget {
                         Text(
                           '550',
                           style: TextStyle(
-                            fontSize: 40,
+                            fontSize: 30,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
@@ -51,15 +51,17 @@ class MyInsightsSection extends StatelessWidget {
                         SizedBox(width: 2),
                         Text(
                           'Calories',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600
                           ),
                         ),
                       ],
                     ),
-                    Spacer(),
+                    SizedBox(height: 4,),
                     const Text(
                       '1950 Remaining',
                       style: TextStyle(
@@ -115,8 +117,8 @@ class MyInsightsSection extends StatelessWidget {
                         Text(
                           '75',
                           style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w600,
                             color: Colors.white,
                           ),
                         ),
@@ -125,7 +127,7 @@ class MyInsightsSection extends StatelessWidget {
                           'kg',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500
                           ),
                         ),
@@ -149,13 +151,13 @@ class MyInsightsSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                   SizedBox(height: h*(24/h)),
+                   Spacer(),
                     const Text(
                       'Weight',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -164,7 +166,7 @@ class MyInsightsSection extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 12,),
+        SizedBox(height: h*(12/h),),
         HydrationCard(),
       ],
     );

@@ -1,32 +1,26 @@
-// --- 1. Mood Data Structure ---
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:interview_task/utils/constent_assets.dart';
 
+/// --- 1. Mood Data Structure ---
 class Mood {
   final String name;
   final String icon;
   final Color color;
-  
-  // Angle boundary (degrees) for mood detection, 0 is at the top, increasing clockwise
-  final double startDegree; 
+  final double startDegree;
 
   const Mood(this.name, this.icon, this.color, this.startDegree);
 }
 
-// 4 Moods defined with their colors and start positions (90-degree segments)
+/// --- 2. Mood List (Each covers 90° segment) ---
 const List<Mood> moods = [
-  // Teal/Green segment (Top Right/Top)
-  Mood("Calm", "😌", Color(0xFF6AAB9E), 315), 
-  // Orange segment (Top Left)
-  Mood("Happy", "😊", Color(0xFFE5C07B), 45), 
-  // Pink/Purple segment (Bottom Left)
-  Mood("Anxious", "😟", Color(0xFFD06B8D), 135), 
-  // Coral/Peach segment (Bottom Right)
-  Mood("Energetic", "🤩", Color(0xFFE59C7B), 225), 
+  Mood("Calm", calmIcon, Color(0xFF6AAB9E), 315),
+  Mood("Happy",happyIcon, Color(0xFFE5C07B), 45),
+  Mood("Anxious", contentIcon, Color(0xFFD06B8D), 135),
+  Mood("Energetic", peacefulIcon, Color(0xFFE59C7B), 225),
 ];
 
-// --- 2. Mood Arc Painter (Draws the Ring) ---
+/// --- 3. Custom Painter (Colored Mood Ring) ---
 class MoodArcPainter extends CustomPainter {
   final List<Mood> moods;
   final double arcWidth;
@@ -37,39 +31,33 @@ class MoodArcPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    
-    // Total sweep for a full circle is 2 * pi radians
-    final double segmentSweep = math.pi / 2; 
+    const sweep = math.pi / 2;
 
-    for (int i = 0; i < moods.length; i++) {
-      final mood = moods[i];
+    for (final mood in moods) {
       final paint = Paint()
         ..color = mood.color
         ..style = PaintingStyle.stroke
-        ..strokeWidth = arcWidth
-        ..strokeCap = StrokeCap.butt;
-      
-      // Calculate start angle in radians. 
-      // 0 degrees is to the right (X-axis). We shift it by -90 degrees (pi/2) to start at the top.
-      double startAngleInRadians = (mood.startDegree * math.pi / 180.0) - (math.pi / 2.0) ;
+        ..strokeWidth = arcWidth;
 
+      final start = (mood.startDegree * math.pi / 180) - (math.pi / 2);
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius - arcWidth / 2),
-        startAngleInRadians,
-        segmentSweep,
-        false, 
+        start,
+        sweep,
+        false,
         paint,
       );
     }
   }
 
   @override
-  bool shouldRepaint(covariant MoodArcPainter oldDelegate) => false;
+  bool shouldRepaint(covariant MoodArcPainter oldDelegate) =>
+      oldDelegate.arcWidth != arcWidth || oldDelegate.moods != moods;
 }
 
-// --- 3. Slider Handle (The White Circle) ---
+/// --- 4. Slider Handle (White Circular Button) ---
 class SliderHandle extends StatelessWidget {
-  const SliderHandle({Key? key}) : super(key: key);
+  const SliderHandle({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -81,20 +69,19 @@ class SliderHandle extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 5,
-            spreadRadius: 1,
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Center(
-        // The 'R' indicator from the original design
+      child: const Center(
         child: Text(
-          'R', 
+          'R',
           style: TextStyle(
-            color: Colors.black, 
-            fontWeight: FontWeight.bold, 
-            fontSize: 18
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
         ),
       ),
@@ -102,77 +89,108 @@ class SliderHandle extends StatelessWidget {
   }
 }
 
-// --- 4. The Main Mood Slider Widget ---
+/// --- 5. Mood Slider with Smooth Handle Animation ---
 class MoodSlider extends StatefulWidget {
   final double size;
+  final Widget icon;
   final Function(String moodName, String moodIcon) onMoodChanged;
 
   const MoodSlider({
-    Key? key,
+    super.key,
     required this.size,
+    required this.icon,
     required this.onMoodChanged,
-  }) : super(key: key);
+  });
 
   @override
-  _MoodSliderState createState() => _MoodSliderState();
+  State<MoodSlider> createState() => _MoodSliderState();
 }
 
-class _MoodSliderState extends State<MoodSlider> {
-  // Angle in radians, 0 is to the right (X-axis)
-  double _currentAngle = 0.0; 
-  // Handle start position on the circle (Top right, matching the image)
-  final double _initialHandleAngle = math.pi * 1.75; // 315 degrees in radians
+class _MoodSliderState extends State<MoodSlider>
+    with SingleTickerProviderStateMixin {
+  late double _currentAngle;
+
+  late AnimationController _controller;
+  late Animation<double> _angleAnimation;
+
+  final double _initialHandleAngle = math.pi * 1.75; // 315°
 
   @override
   void initState() {
     super.initState();
     _currentAngle = _initialHandleAngle;
-    // Notify parent about the initial mood
-    _updateSelectedMood(_initialHandleAngle);
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSelectedMood(_currentAngle);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    // 1. Calculate the center of the circular area
-    final Offset center = Offset(widget.size / 2, widget.size / 2);
+    final center = Offset(widget.size / 2, widget.size / 2);
+    final vector = details.localPosition - center;
+    final double newAngle = math.atan2(vector.dy, vector.dx);
 
-    // 2. Calculate the vector from the center to the touch point
-    final Offset vector = details.localPosition - center;
+    _animateHandle(newAngle);
+    _updateSelectedMood(newAngle);
+  }
 
-    // 3. Calculate the new raw angle (in radians, -pi to pi, 0 is right)
-    final double rawAngle = math.atan2(vector.dy, vector.dx);
+  void _animateHandle(double newAngle) {
+    _controller.stop();
 
-    setState(() {
-      _currentAngle = rawAngle;
-      _updateSelectedMood(rawAngle);
+    final double startAngle = _currentAngle;
+    double delta = newAngle - startAngle;
+
+    // Ensure shortest rotation path
+    if (delta.abs() > math.pi) {
+      delta -= math.pi * 2 * delta.sign;
+    }
+
+    _angleAnimation = Tween<double>(
+      begin: startAngle,
+      end: startAngle + delta,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    _controller
+      ..reset()
+      ..forward();
+
+    _angleAnimation.addListener(() {
+      setState(() {
+        _currentAngle = _angleAnimation.value;
+      });
     });
   }
 
   void _updateSelectedMood(double rawAngle) {
-    // 1. Normalize angle to 0-360 degrees, starting at the top and increasing clockwise.
-    // 0 is right (X-axis). 
-    // To make 0 at the top (Y-axis), we shift it by -90 degrees, then normalize.
-    double angleDegrees = (rawAngle * 180 / math.pi + 90 + 360) % 360; 
+    double angleDegrees = (rawAngle * 180 / math.pi + 90 + 360) % 360;
 
-    // Find the current mood based on the angle
-    Mood selectedMood = moods.first;
-    double minDiff = 360;
+    for (final mood in moods) {
+      double start = mood.startDegree % 360;
+      double end = (start + 90) % 360;
 
-    for (var mood in moods) {
-      // Find the center angle of the segment (start + 45 degrees)
-      double centerAngle = (mood.startDegree + 45) % 360;
+      bool inSegment;
+      if (start < end) {
+        inSegment = angleDegrees >= start && angleDegrees < end;
+      } else {
+        inSegment = angleDegrees >= start || angleDegrees < end;
+      }
 
-      // Calculate the difference, handling the 360/0 wrap-around
-      double diff = (angleDegrees - centerAngle + 180) % 360 - 180;
-      double absDiff = diff.abs();
-      
-      if (absDiff < minDiff) {
-        minDiff = absDiff;
-        selectedMood = mood;
+      if (inSegment) {
+        widget.onMoodChanged(mood.name, mood.icon);
+        return;
       }
     }
-    
-    // Notify the parent screen
-    widget.onMoodChanged(selectedMood.name, selectedMood.icon);
   }
 
   @override
@@ -180,42 +198,24 @@ class _MoodSliderState extends State<MoodSlider> {
     final double radius = widget.size / 2;
     final double arcWidth = radius * 0.25;
 
-    return Container(
-      width: widget.size,
-      height: widget.size,
-      child: GestureDetector(
-        onPanUpdate: _handlePanUpdate,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // 1. The Mood Arc Ring
-            CustomPaint(
-              size: Size.square(widget.size),
-              painter: MoodArcPainter(moods: moods, arcWidth: arcWidth),
+    return GestureDetector(
+      onPanUpdate: _handlePanUpdate,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            size: Size.square(widget.size),
+            painter: MoodArcPainter(moods: moods, arcWidth: arcWidth),
+          ),
+          Transform.translate(
+            offset: Offset(
+              math.cos(_currentAngle) * (radius - arcWidth / 2),
+              math.sin(_currentAngle) * (radius - arcWidth / 2),
             ),
-
-            // 2. The Slider Handle (Rotated using Transform.translate)
-            // It is positioned by translating it outwards by the radius
-            Transform.translate(
-              offset: Offset(
-                math.cos(_currentAngle) * (radius - arcWidth / 2),
-                math.sin(_currentAngle) * (radius - arcWidth / 2),
-              ),
-              child: const SliderHandle(),
-            ),
-
-            // 3. Central Icon Placeholder (The parent widget will handle the actual icon)
-            Container(
-              width: widget.size * 0.45,
-              height: widget.size * 0.45,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              // The icon is placed by the parent using AnimatedSwitcher
-            ),
-          ],
-        ),
+            child: const SliderHandle(),
+          ),
+          widget.icon,
+        ],
       ),
     );
   }

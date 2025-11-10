@@ -10,4 +10,10 @@ const String arrowGreenIcon='assets/icons/arrow_green.svg';
 const String arrowRightIcon='assets/icons/arrow_right.svg'; 
 const String clockIcon='assets/icons/clock.svg';
 const String arrowDownIcon='assets/icons/arrow_down.svg';
-
+const String calmIcon='assets/icons/calm.svg';
+const String happyIcon='assets/icons/happy.svg';
+const String peacefulIcon='assets/icons/peaceful.svg';
+const String contentIcon='assets/icons/content.svg';
+const String dotsIcon='assets/icons/dots.svg';
+const String armIcon='assets/icons/arm.svg';
+const String legIcon='assets/icons/leg.svg';
